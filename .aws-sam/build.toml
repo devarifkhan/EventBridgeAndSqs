@@ -7,6 +7,6 @@ architecture = "x86_64"
 handler = "src/handlers/putEvents.handler"
 manifest_hash = "034dd9d287d8b04d2d2681a98a82af3a"
 packagetype = "Zip"
-functions = ["PutEventFunction"]
+functions = ["PutEventFunction", "ProcessEventFunction"]
 
 [layer_build_definitions]

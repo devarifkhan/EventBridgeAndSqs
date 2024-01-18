@@ -33,6 +33,33 @@ Resources:
             Method: POST
 
 
+  ProcessEventFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/processEvent.handler
+      Runtime: nodejs20.x
+      Environment:
+        Variables:
+          EVENT_BUS_NAME: !Ref EventBus
+      Architectures:
+      - x86_64
+      MemorySize: 128
+      Timeout: 100
+      Description: A HTTP post method for batch processing.
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /batch
+            Method: POST
+        MySQSEvent:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt TargetSQS.Arn
+            BatchSize: 10
+            FunctionResponseTypes:
+            - ReportBatchItemFailures
+
 
     # event bus
   EventBus:
@@ -45,6 +72,7 @@ Resources:
     Type: AWS::SQS::Queue
     Properties:
       QueueName: TargetSQS
+      VisibilityTimeout: 110
   # Define the event rule to filter for events
   TargetSQSRule:
     Type: AWS::Events::Rule

@@ -36,6 +36,39 @@ Resources:
       CodeUri: PutEventFunction
     Metadata:
       SamResourceId: PutEventFunction
+  ProcessEventFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: src/handlers/processEvent.handler
+      Runtime: nodejs20.x
+      Environment:
+        Variables:
+          EVENT_BUS_NAME:
+            Ref: EventBus
+      Architectures:
+      - x86_64
+      MemorySize: 128
+      Timeout: 100
+      Description: A HTTP post method for batch processing.
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /batch
+            Method: POST
+        MySQSEvent:
+          Type: SQS
+          Properties:
+            Queue:
+              Fn::GetAtt:
+              - TargetSQS
+              - Arn
+            BatchSize: 10
+            FunctionResponseTypes:
+            - ReportBatchItemFailures
+      CodeUri: ProcessEventFunction
+    Metadata:
+      SamResourceId: ProcessEventFunction
   EventBus:
     Type: AWS::Events::EventBus
     Properties:
@@ -44,6 +77,7 @@ Resources:
     Type: AWS::SQS::Queue
     Properties:
       QueueName: TargetSQS
+      VisibilityTimeout: 110
   TargetSQSRule:
     Type: AWS::Events::Rule
     Properties:
