@@ -8,7 +8,7 @@ export const handler = async (event) => {
         for (const record of records) {
             try {
                 const parseBody = JSON.parse(record.body);
-                console.log("Processing vehicle details" + parseBody.vehicleNo)
+                console.log("Processing vehicle details" + parseBody.detail.vehicleNo)
                 console.log("Processing is successful" + record.messageId)
             } catch (err) {
                 batchItemFailures.push({
