@@ -8,8 +8,22 @@ Resources:
     Properties:
       Handler: src/handlers/putEvents.handler
       Runtime: nodejs20.x
+      Environment:
+        Variables:
+          EVENT_BUS_NAME:
+            Ref: EventBus
       Architectures:
       - x86_64
+      Policies:
+      - Statement:
+        - Sid: SendEvents
+          Effect: Allow
+          Action:
+          - events:PutEvents
+          Resource:
+            Fn::GetAtt:
+            - EventBus
+            - Arn
       MemorySize: 128
       Timeout: 100
       Description: A HTTP post method to post all items.
@@ -26,6 +40,43 @@ Resources:
     Type: AWS::Events::EventBus
     Properties:
       Name: EB_SQS_EventBus
+  TargetSQS:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: TargetSQS
+  TargetSQSRule:
+    Type: AWS::Events::Rule
+    Properties:
+      EventBusName:
+        Fn::GetAtt:
+        - EventBus
+        - Arn
+      EventPattern:
+        source:
+        - fuel_app
+        detail-type:
+        - user_sign_up
+      Targets:
+      - Arn:
+          Fn::GetAtt:
+          - TargetSQS
+          - Arn
+        Id: eb-sqs-target
+  EventBridgeToToSqsPolicy:
+    Type: AWS::SQS::QueuePolicy
+    Properties:
+      PolicyDocument:
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: events.amazonaws.com
+          Action: SQS:SendMessage
+          Resource:
+            Fn::GetAtt:
+            - TargetSQS
+            - Arn
+      Queues:
+      - Ref: TargetSQS
 Outputs:
   WebEndpoint:
     Description: API Gateway endpoint URL for Prod stage
@@ -40,6 +91,4 @@ Outputs:
   EventBus:
     Description: EventBus ARN
     Value:
-      Fn::GetAtt:
-      - EventBus
-      - Arn
+      Ref: EventBus
