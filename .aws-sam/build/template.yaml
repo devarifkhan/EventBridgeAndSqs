@@ -8,6 +8,10 @@ Resources:
     Properties:
       Handler: src/handlers/putEvents.handler
       Runtime: nodejs20.x
+      Environment:
+        Variables:
+          EVENT_BUS_NAME:
+            Ref: EventBus
       Architectures:
       - x86_64
       MemorySize: 128
@@ -40,6 +44,4 @@ Outputs:
   EventBus:
     Description: EventBus ARN
     Value:
-      Fn::GetAtt:
-      - EventBus
-      - Arn
+      Ref: EventBus

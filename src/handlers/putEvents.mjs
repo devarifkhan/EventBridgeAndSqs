@@ -12,20 +12,57 @@
 // /**
 //  * A simple example includes a HTTP get method to get all items from a DynamoDB table.
 //  */
+
+
+
+import {
+    EventBridgeClient,
+    PutEventsCommand
+} from "@aws-sdk/client-eventbridge";
+const EVENT_BUS_NAME = process.env.EVENT_BUS_NAME;
+const client = new EventBridgeClient();
+
+
 export const handler = async (event) => {
     if (event.httpMethod !== 'POST') {
         throw new Error(`handler only accept POST method, you tried: ${event.httpMethod}`);
     }
     console.info('received:', event);
 
-  
-
-    const response = {
-        statusCode: 200,
-        body: JSON.stringify("Working....")
+    const input = { // PutEventsRequest
+        Entries: [ // PutEventsRequestEntryList // required
+            { // PutEventsRequestEntry
+                Time: new Date("TIMESTAMP"),
+                Source: "fuel_app",
+                DetailType: "user_sign_up",
+                Detail: JSON.stringify({
+                    vehicleNo: "KA-01-123456",
+                    NID: "0123456789"
+                }),
+                EventBusName: EVENT_BUS_NAME
+            },
+        ]
     };
 
-    // All log statements are written to CloudWatch
-    console.info(`response from: ${event.path} statusCode: ${response.statusCode} body: ${response.body}`);
-    return response;
+
+    try {
+        const command = new PutEventsCommand(input);
+        const res = await client.send(command);
+        const response = {
+            statusCode: 200,
+            body: JSON.stringify(res)
+        }
+        console.info(`response from: ${event.path} statusCode: ${response.statusCode} body: ${response.body}`);
+        return response;
+    } catch (err) {
+        console.error(err);
+
+        const errorResponse = {
+            statusCode: 500,
+            body: JSON.stringify({ error: err.message })
+        };
+
+        console.info(`error response from: ${event.path} statusCode: ${errorResponse.statusCode} body: ${errorResponse.body}`);
+        return errorResponse;
+    }
 }
