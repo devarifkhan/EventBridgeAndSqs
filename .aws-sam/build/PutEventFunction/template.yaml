@@ -5,7 +5,6 @@ Transform:
 - AWS::Serverless-2016-10-31
 
 Resources:
-
   PutEventFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -16,6 +15,13 @@ Resources:
           EVENT_BUS_NAME: !Ref EventBus
       Architectures:
       - x86_64
+      Policies:
+      - Statement:
+        - Sid: SendEvents
+          Effect: Allow
+          Action:
+          - events:PutEvents
+          Resource: !GetAtt EventBus.Arn
       MemorySize: 128
       Timeout: 100
       Description: A HTTP post method to post all items.
@@ -26,11 +32,46 @@ Resources:
             Path: /generate
             Method: POST
 
+
+
     # event bus
   EventBus:
     Type: AWS::Events::EventBus
     Properties:
       Name: EB_SQS_EventBus
+
+  # sqs queue
+  TargetSQS:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: TargetSQS
+  # Define the event rule to filter for events
+  TargetSQSRule:
+    Type: AWS::Events::Rule
+    Properties:
+      EventBusName: !GetAtt EventBus.Arn
+      EventPattern:
+        source:
+        - "fuel_app"
+        detail-type:
+        - "user_sign_up"
+      Targets:
+      - Arn: !GetAtt TargetSQS.Arn
+        Id: eb-sqs-target
+
+  # Allow EventBridge to invoke SQS
+  EventBridgeToToSqsPolicy:
+    Type: AWS::SQS::QueuePolicy
+    Properties:
+      PolicyDocument:
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: events.amazonaws.com
+          Action: SQS:SendMessage
+          Resource: !GetAtt TargetSQS.Arn
+      Queues:
+      - Ref: TargetSQS
 
 
 Outputs:
